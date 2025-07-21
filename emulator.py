@@ -202,7 +202,7 @@ class emulator:
         emulator.define('JEQ', 0x35, 3, ['addr'], 'Jump if X == Y')
         emulator.define('JNE', 0x36, 3, ['addr'], 'Jump if X != Y')
 
-        # Load instructions
+        # Load immediate
         emulator.define("LDAI", 0x37, 2, ["imm8"], "Load immediate 8-bit value into A")
         emulator.define("LDXI", 0x38, 2, ["imm8"], "Load immediate 8-bit value into X")
         emulator.define("LDYI", 0x39, 2, ["imm8"], "Load immediate 8-bit value into Y")
