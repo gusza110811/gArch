@@ -67,7 +67,7 @@ class assembler:
         # Load Immediate
         "ldai":0x37,
         "ldxi":0x37,
-        "ldyi":0x37,
+        "ldyi":0x38,
     }
 
     def simple(code:list[str]):
@@ -83,17 +83,17 @@ class assembler:
                     try:
                         assembler.result += int(word[1:],base=16).to_bytes(math.ceil(len(word[1:])/2))
                     except ValueError:
-                        quit(f"Line {idx}: invalid hex value")
+                        sys.exit(f"Line {idx+1} '{line.strip()}': invalid hex '{word}'")
                 elif word[0] == "b":
                     try:
                         assembler.result += int(word[1:],base=2).to_bytes(math.ceil(len(word[1:])/8))
                     except ValueError:
-                        quit(f"Line {idx}: invalid binary value")
+                        sys.exit(f"Line {idx+1} '{line.strip()}': invalid binary '{word}'")
                 else:
                     try:
                         assembler.result += bytes([int(word[1:])])
                     except ValueError:
-                        quit(f"Line {idx}: can't decode `{word}`!")
+                        sys.exit(f"Line {idx+1}: can't decode `{word}`!")
         return assembler.result
 
 if __name__ == "__main__":
