@@ -71,9 +71,13 @@ class emulator:
     @staticmethod
     def main(code:bytes):
         emulator.definitions()
+
+        for idx,byte in enumerate(code):
+            emulator.memory[idx] = byte
+
         A=0;X=1;Y=2
         while emulator.counter < len(code):
-            byte = code[emulator.counter]
+            byte = emulator.memory[emulator.counter]
             parambytes = []
             instruction = emulator.OPCODES[byte]
             name:str = instruction["mnemonic"].lower()
@@ -107,7 +111,8 @@ class emulator:
                 addr1 = emulator.bytes_to_double(parambytes[0], parambytes[1])
                 addr2 = emulator.bytes_to_double(parambytes[2], parambytes[3])
                 command.move(addr1,addr2) # for consistency even though it doesnt make a lot of sense
-
+            elif name == "halt":
+                break
             emulator.counter +=1
         print("\n\n")
         emulator.dump_registers()
@@ -209,6 +214,7 @@ class emulator:
 
         # --- System ---
         emulator.define('HALT', 0xFF, 1, [], 'Stop execution')
+        return
 
 
 if __name__ == "__main__":
