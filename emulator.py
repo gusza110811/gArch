@@ -261,9 +261,9 @@ class emulator:
 if __name__ == "__main__":
     source = ""
     code:bytes
-    if not emulator.TESTING:
+    try:
         source = sys.argv[1]
-    else:
+    except IndexError:
         source = "main.bin"
     
     with open(source,"rb") as sourcefile:
@@ -273,6 +273,7 @@ if __name__ == "__main__":
         emulator.main(code)
     except KeyboardInterrupt:
         print("INT")
-    print("\n\n")
-    emulator.dump_registers()
-    emulator.dump_memory()
+    if emulator.TESTING:
+        print("\n\n")
+        emulator.dump_registers()
+        emulator.dump_memory()
