@@ -111,6 +111,10 @@ class emulator:
                 addr1 = emulator.bytes_to_double(parambytes[0], parambytes[1])
                 addr2 = emulator.bytes_to_double(parambytes[2], parambytes[3])
                 command.move(addr1,addr2) # for consistency even though it doesnt make a lot of sense
+            elif name == "jmp":
+                emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                continue # the counter is not supposed to increase after a jump
+            
             elif name == "halt":
                 break
             emulator.counter +=1
@@ -223,9 +227,14 @@ if __name__ == "__main__":
     if not emulator.TESTING:
         source = sys.argv[1]
     else:
-        source = "test.bin"
+        source = "main.bin"
     
     with open(source,"rb") as sourcefile:
         code = sourcefile.read()
     
-    emulator.main(code)
+    try:
+        emulator.main(code)
+    except KeyboardInterrupt:
+        print("\n\n")
+        emulator.dump_registers()
+        emulator.dump_memory()

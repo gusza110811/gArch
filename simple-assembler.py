@@ -1,7 +1,7 @@
 import sys
 import math
 
-"""
+""" quick reference from emulator.py
         # --- Register Loads ---
         emulator.define('LDA', 0x10, 3, ['addr'], 'Load from address into A')
         emulator.define('LDX', 0x11, 3, ['addr'], 'Load from address into X')
@@ -63,7 +63,8 @@ class assembler:
 
         # logic not yet
 
-        # control flow not yet
+        # Control flow (incomplete)
+        "jmp":0x30,
 
         # Load Immediate
         "ldai":0x37,
@@ -76,6 +77,8 @@ class assembler:
         length = 0
         # Label
         for idx,line in enumerate(code):
+            line = line.strip()
+
             if line.lower().startswith("label"):
                 words = line.split()[1:]
                 assembler.constants[words[0]] = length.to_bytes(2)
@@ -101,6 +104,8 @@ class assembler:
             assembler.constants[words[0]] = assembler.decode_value(words[1],idx,line)
             return True
         if line.lower().startswith("label"):
+            return True
+        if line.lower().startswith(";"):
             return True
 
     def decode_value(word:str,idx=0,line=""):
@@ -140,8 +145,8 @@ if __name__ == "__main__":
         source = sys.argv[1]
         dest = sys.argv[2]
     else:
-        source = "test.asm"
-        dest = "test.bin"
+        source = "main.asm"
+        dest = "main.bin"
         simple = True
     with open(source, "r") as sourcefile:
         code = sourcefile.readlines()
@@ -149,10 +154,12 @@ if __name__ == "__main__":
     result = assembler.main(code)
     print("\nConstants used:")
     for idx, (name,value) in enumerate(assembler.constants.items()):
-        if not is_ascii_printable_byte(int.from_bytes(value)):
-            print(f"{str(idx).zfill(len(assembler.constants))}: {name} = {int.from_bytes(value)}")
-        else:
+        if is_ascii_printable_byte(int.from_bytes(value)):
             print(f"{str(idx).zfill(len(assembler.constants))}: {name} = {int.from_bytes(value)} (`{value.decode("ascii")}`)")
+        elif int.from_bytes(value) > 255:
+            print(f"{str(idx).zfill(len(assembler.constants))}: {name} = {int.from_bytes(value)} ({hex(int.from_bytes(value))})")
+        else:
+            print(f"{str(idx).zfill(len(assembler.constants))}: {name} = {int.from_bytes(value)}")
     print("<","="*len(assembler.constants)*2,">",sep="=")
     with open(dest, "wb") as destfile:
         destfile.write(result)
