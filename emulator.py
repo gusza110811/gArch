@@ -68,6 +68,8 @@ class emulator:
     iostateaddr = 0xFFF0
     ioaddr = range(0xFFF8,0xFFFF)
 
+    carry = False
+
     @staticmethod
     def main(code:bytes):
         emulator.definitions()
@@ -80,7 +82,11 @@ class emulator:
             byte = emulator.memory[emulator.counter]
             parambytes = []
             instruction = emulator.OPCODES[byte]
-            name:str = instruction["mnemonic"].lower()
+            try:
+                name:str = instruction["mnemonic"].lower()
+            except TypeError:
+                emulator.counter +=1
+                continue
             paramslen:int = instruction["size"]
 
             for i in range(paramslen-1):
@@ -111,16 +117,34 @@ class emulator:
                 addr1 = emulator.bytes_to_double(parambytes[0], parambytes[1])
                 addr2 = emulator.bytes_to_double(parambytes[2], parambytes[3])
                 command.move(addr1,addr2) # for consistency even though it doesnt make a lot of sense
+            
             elif name == "jmp":
                 emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
                 continue # the counter is not supposed to increase after a jump
+            elif name == "jz":
+                if emulator.registers[A] == 0:
+                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                    continue # the counter is not supposed to increase after a jump
+            elif name == "jc":
+                if emulator.carry:
+                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                    continue # the counter is not supposed to increase after a jump
+            elif name == "jnc":
+                if not emulator.carry:
+                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                    continue # the counter is not supposed to increase after a jump
             
+            elif name == "add":
+                emulator.registers[A] = emulator.registers[X] + emulator.registers[Y]
+                if emulator.registers[A] > 255:
+                    emulator.carry = True
+                    emulator.registers[A] = emulator.registers[A] % 256
+                else:
+                    emulator.carry = False
+
             elif name == "halt":
                 break
             emulator.counter +=1
-        print("\n\n")
-        emulator.dump_registers()
-        emulator.dump_memory()
 
         return
 
@@ -132,6 +156,10 @@ class emulator:
         print(f"Register A: x{emulator.registers[0]:02X}")
         print(f"Register X: x{emulator.registers[1]:02X}")
         print(f"Register Y: x{emulator.registers[2]:02X}")
+
+    @staticmethod
+    def dump_addr(addr:int):
+        print(f"{addr:04X}: x{emulator.memory[addr]:02X}")
 
     @staticmethod
     def dump_memory(start: int = 0, end: int = None):
@@ -152,7 +180,10 @@ class emulator:
             else:
                 if repeat_count > 0:
                     if not printed:
-                        print(f"... {repeat_count} times")
+                        if repeat_count > 1:
+                            print(f"... {repeat_count} times")
+                        else:
+                            print("... repeated")
                         printed = True
                     repeat_count = 0
 
@@ -206,15 +237,19 @@ class emulator:
         emulator.define('JMP', 0x30, 3, ['addr'], 'Jump to address')
         emulator.define('JZ',  0x31, 3, ['addr'], 'Jump if A == 0')
         emulator.define('JNZ', 0x32, 3, ['addr'], 'Jump if A != 0')
-        emulator.define('JG',  0x33, 3, ['addr'], 'Jump if A > 0')
-        emulator.define('JL',  0x34, 3, ['addr'], 'Jump if A < 0')
+        emulator.define('JC',  0x33, 3, ['addr'], 'Jump if Carry')
+        emulator.define('JNC',  0x33, 3, ['addr'], 'Jump if not Carry')
         emulator.define('JEQ', 0x35, 3, ['addr'], 'Jump if X == Y')
         emulator.define('JNE', 0x36, 3, ['addr'], 'Jump if X != Y')
 
         # Load immediate
-        emulator.define("LDAI", 0x37, 2, ["imm8"], "Load immediate 8-bit value into A")
-        emulator.define("LDXI", 0x38, 2, ["imm8"], "Load immediate 8-bit value into X")
-        emulator.define("LDYI", 0x39, 2, ["imm8"], "Load immediate 8-bit value into Y")
+        emulator.define("LDAI", 0x47, 2, ["imm8"], "Load immediate 8-bit value into A")
+        emulator.define("LDXI", 0x48, 2, ["imm8"], "Load immediate 8-bit value into X")
+        emulator.define("LDYI", 0x49, 2, ["imm8"], "Load immediate 8-bit value into Y")
+
+        # Register-register
+        emulator.define("MVAX", 0x50, 1, ["imm8"], "Load immediate 8-bit value into Y")
+        emulator.define("MVAY", 0x51, 1, ["imm8"], "Load immediate 8-bit value into Y")
 
         # --- System ---
         emulator.define('HALT', 0xFF, 1, [], 'Stop execution')
@@ -235,6 +270,7 @@ if __name__ == "__main__":
     try:
         emulator.main(code)
     except KeyboardInterrupt:
-        print("\n\n")
-        emulator.dump_registers()
-        emulator.dump_memory()
+        print("INT")
+    print("\n\n")
+    emulator.dump_registers()
+    emulator.dump_memory()

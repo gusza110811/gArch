@@ -1,55 +1,12 @@
 import sys
 import math
 
-""" quick reference from emulator.py
-        # --- Register Loads ---
-        emulator.define('LDA', 0x10, 3, ['addr'], 'Load from address into A')
-        emulator.define('LDX', 0x11, 3, ['addr'], 'Load from address into X')
-        emulator.define('LDY', 0x12, 3, ['addr'], 'Load from address into Y')
-
-        # --- Register Stores ---
-        emulator.define('STA', 0x13, 3, ['addr'], 'Store A into address')
-        emulator.define('STX', 0x14, 3, ['addr'], 'Store X into address')
-        emulator.define('STY', 0x15, 3, ['addr'], 'Store Y into address')
-
-        # --- Memory to Memory ---
-        emulator.define('MOV', 0x16, 5, ['addr_dst', 'addr_src'], 'Copy from addr_src to addr_dst')
-
-        # --- Arithmetic ---
-        emulator.define('ADD', 0x20, 1, [], 'A = X + Y')
-        emulator.define('SUB', 0x21, 1, [], 'A = X - Y')
-        emulator.define('MUL', 0x22, 1, [], 'A = X * Y')
-        emulator.define('DIV', 0x23, 1, [], 'A = X / Y (int)')
-
-        # --- Bitwise/Logic (Optional) ---
-        emulator.define('AND', 0x24, 1, [], 'A = X & Y')
-        emulator.define('OR',  0x25, 1, [], 'A = X | Y')
-        emulator.define('XOR', 0x26, 1, [], 'A = X ^ Y')
-        emulator.define('NOT', 0x27, 1, [], 'A = ~X')
-
-        # --- Control Flow ---
-        emulator.define('JMP', 0x30, 3, ['addr'], 'Jump to address')
-        emulator.define('JZ',  0x31, 3, ['addr'], 'Jump if A == 0')
-        emulator.define('JNZ', 0x32, 3, ['addr'], 'Jump if A != 0')
-        emulator.define('JG',  0x33, 3, ['addr'], 'Jump if A > 0')
-        emulator.define('JL',  0x34, 3, ['addr'], 'Jump if A < 0')
-        emulator.define('JEQ', 0x35, 3, ['addr'], 'Jump if X == Y')
-        emulator.define('JNE', 0x36, 3, ['addr'], 'Jump if X != Y')
-
-        # Load immediate
-        emulator.define("LDAI", 0x37, 2, ["imm8"], "Load immediate 8-bit value into A")
-        emulator.define("LDXI", 0x38, 2, ["imm8"], "Load immediate 8-bit value into X")
-        emulator.define("LDYI", 0x39, 2, ["imm8"], "Load immediate 8-bit value into Y")
-
-        # --- System ---
-        emulator.define('HALT', 0xFF, 1, [], 'Stop execution')
-"""
-
 class assembler:
     TESTING = True
     result = b""
     constants:dict[str,bytes] = {}
     mnemonicToOP = {
+        "nop":0x00,
         # Load and store
         "lda":0x10,
         "ldx":0x11,
@@ -59,17 +16,26 @@ class assembler:
         "sty":0x15,
         "mov":0x16,
 
-        # arithmetic not yet
+        # arithmetic not yet complete
+        "add":0x20,
 
         # logic not yet
 
-        # Control flow (incomplete)
+        # Control flow not yet complete)
         "jmp":0x30,
+        "jz":0x31,
+
+        "jc":0x33,
+        "jnc":0x33,
 
         # Load Immediate
-        "ldai":0x37,
-        "ldxi":0x37,
-        "ldyi":0x38,
+        "ldai":0x47,
+        "ldxi":0x48,
+        "ldyi":0x49,
+
+        # Register move
+        "mvax":0x50,
+        "mvay":0x51,
     }
 
     def main(code:list[str]):
@@ -95,7 +61,11 @@ class assembler:
 
             # Word decoder
             for word in line.split():
-                assembler.result += assembler.decode_value(word,idx,line)
+                result = assembler.decode_value(word,idx,line)
+                if result:
+                    assembler.result += result
+                else:
+                    break
         return assembler.result
 
     def decode_helpers(line:str,idx):
@@ -127,6 +97,8 @@ class assembler:
                 return int(word[1:],base=2).to_bytes(math.ceil(len(word[1:])/8))
             except ValueError:
                 sys.exit(f"Line {idx+1} '{line}': invalid binary '{word}'")
+        elif word[0] == ";":
+            return False
         else:
             try:
                 return bytes([int(word)])
