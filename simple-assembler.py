@@ -19,7 +19,7 @@ class assembler:
         # arithmetic not yet complete
         "add":0x20,
 
-        # logic not yet
+        # bitwise-logic not yet
 
         # Control flow not yet complete)
         "jmp":0x30,
