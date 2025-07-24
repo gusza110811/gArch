@@ -1,4 +1,4 @@
-const console xFFF8
+const num_console xFFF9
 const num1 x8800
 const num2 x8801
 const sum x880F
@@ -13,4 +13,4 @@ STA num2
 LDX num1
 LDY num2
 ADD
-STA sum
+STA num_console

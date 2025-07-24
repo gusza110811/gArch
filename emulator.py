@@ -52,6 +52,8 @@ class io:
     def handleout(value,ionum):
         if ionum == 0:
             print(chr(value),end="")
+        if ionum == 1:
+            print(value,end="")
         # the rest are unused for now
     
     @staticmethod
