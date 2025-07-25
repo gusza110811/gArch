@@ -53,7 +53,7 @@ class io:
         if ionum == 0:
             print(chr(value),end="")
         if ionum == 1:
-            print(value,end="")
+            print(value,end=" ")
         # the rest are unused for now
     
     @staticmethod
@@ -69,6 +69,9 @@ class emulator:
 
     iostateaddr = 0xFFF0
     ioaddr = range(0xFFF8,0xFFFF)
+
+    stackbeginaddr = 0xFFE0 # 256 bytes stack, 0xFFE0 to 0xFFEF
+    stackindex = 0
 
     carry = False
 
@@ -102,19 +105,28 @@ class emulator:
                 if name[2] == "a":targetreg=A
                 elif name[2] == "x":targetreg=X
                 elif name[2] == "y":targetreg=Y
-                if name[-1] != "i":
-                    address = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    command.load(address,targetreg)
-                else:
+                elif name[2] == "v":targetreg=A
+                if name[-1] == "i":
                     value = parambytes[0]
                     command.loadimm(value,targetreg)
+                elif name[-1] == "v":
+                    address = (emulator.registers[X] << 8) + emulator.registers[Y]
+                    command.load(address,targetreg)
+                else:
+                    address = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                    command.load(address,targetreg)
             if name[:2] == "st":
                 sourcereg=None
                 if name[2] == "a":sourcereg=A
                 elif name[2] == "x":sourcereg=X
                 elif name[2] == "y":sourcereg=Y
-                address = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                command.store(sourcereg,address)
+                if name[2] == "v":sourcereg=A
+                if name[2] == "v":
+                    address = (emulator.registers[X] << 8) + emulator.registers[Y]
+                    command.store(sourcereg,address)
+                else:
+                    address = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                    command.store(sourcereg,address)
             elif name == "mov":
                 addr1 = emulator.bytes_to_double(parambytes[0], parambytes[1])
                 addr2 = emulator.bytes_to_double(parambytes[2], parambytes[3])
@@ -127,12 +139,24 @@ class emulator:
                 if emulator.registers[A] == 0:
                     emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
                     continue # the counter is not supposed to increase after a jump
+            elif name == "jnz":
+                if emulator.registers[A] != 0:
+                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                    continue # the counter is not supposed to increase after a jump
             elif name == "jc":
                 if emulator.carry:
                     emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
                     continue # the counter is not supposed to increase after a jump
             elif name == "jnc":
                 if not emulator.carry:
+                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                    continue # the counter is not supposed to increase after a jump
+            elif name == "jeq":
+                if emulator.registers[X] == emulator.registers[Y]:
+                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                    continue # the counter is not supposed to increase after a jump
+            elif name == "jne":
+                if emulator.registers[X] != emulator.registers[Y]:
                     emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
                     continue # the counter is not supposed to increase after a jump
             
@@ -223,13 +247,18 @@ class emulator:
         # --- Memory to Memory ---
         emulator.define('MOV', 0x16, 5, ['addr_dst', 'addr_src'], 'Copy from addr_src to addr_dst')
 
+        # --- Variable Load/store ---
+        emulator.define('LDV', 0x17, 1, [], 'Load value into register A, using X as high byte address and Y as low byte address')
+        emulator.define('STV', 0x18, 1, [], 'Load value into register A, using X as high byte address and Y as low byte address')
+
+
         # --- Arithmetic ---
         emulator.define('ADD', 0x20, 1, [], 'A = X + Y')
         emulator.define('SUB', 0x21, 1, [], 'A = X - Y')
         emulator.define('MUL', 0x22, 1, [], 'A = X * Y')
-        emulator.define('DIV', 0x23, 1, [], 'A = X / Y (int)')
+        emulator.define('DIV', 0x23, 1, [], 'A = X / Y (floor)')
 
-        # --- Bitwise/Logic (Optional) ---
+        # --- Bitwise Logic ---
         emulator.define('AND', 0x24, 1, [], 'A = X & Y')
         emulator.define('OR',  0x25, 1, [], 'A = X | Y')
         emulator.define('XOR', 0x26, 1, [], 'A = X ^ Y')
@@ -244,14 +273,20 @@ class emulator:
         emulator.define('JEQ', 0x35, 3, ['addr'], 'Jump if X == Y')
         emulator.define('JNE', 0x36, 3, ['addr'], 'Jump if X != Y')
 
-        # Load immediate
+        # --- Load immediate ---
         emulator.define("LDAI", 0x47, 2, ["imm8"], "Load immediate 8-bit value into A")
         emulator.define("LDXI", 0x48, 2, ["imm8"], "Load immediate 8-bit value into X")
         emulator.define("LDYI", 0x49, 2, ["imm8"], "Load immediate 8-bit value into Y")
 
-        # Register-register
-        emulator.define("MVAX", 0x50, 1, ["imm8"], "Load immediate 8-bit value into Y")
-        emulator.define("MVAY", 0x51, 1, ["imm8"], "Load immediate 8-bit value into Y")
+        # --- Register-register ---
+        emulator.define("MVAX", 0x50, 1, [], "Copy Register A to X")
+        emulator.define("MVAY", 0x51, 1, [], "Copy Register A to Y")
+
+        # --- Stack ---
+        emulator.define("PUSH", 0x60, 1, [], "Push Register A to stack")
+        emulator.define("POP", 0x61, 1, [], "Pop from stack to Register A")
+        emulator.define("POPX", 0x62, 1, [], "Pop from stack to Register X")
+        emulator.define("POPY", 0x63, 1, [], "Pop from stack to Register Y")
 
         # --- System ---
         emulator.define('HALT', 0xFF, 1, [], 'Stop execution')

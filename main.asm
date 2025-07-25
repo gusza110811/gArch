@@ -1,25 +1,29 @@
 const console xFFF8
-const num_console xFFF9
-const num1 x8800
-const num2 x8801
-const sum x880F
+const counter x8800
 
-; console input does not exist yet lol
-LDAI 20
-STA num1
-LDAI 32
-STA num2
+LDAI word^
+STA counter
 
-; main
-LDX num1
-LDY num2
-ADD
-STA sum
+label printloop
+    ; print
+    LDXI 0
+    LDY counter
+    LDV
+    STA console
 
-MOV num_console num1
-LDAI '+
-STA console
-MOV num_console num2
-LDAI '=
-STA console
-MOV num_console sum
+    ; increment
+    LDX counter
+    LDYI 1
+    ADD
+    STA counter
+
+    ; check loop condition
+    LDXI 0
+    LDY counter
+    LDV
+
+JNZ printloop
+HALT
+
+label word
+.ascii The world is on fucking fire
