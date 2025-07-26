@@ -317,19 +317,19 @@ class emulator:
         emulator.define('JZ',  0x31, 3, ['addr'], 'Jump if A == 0')
         emulator.define('JNZ', 0x32, 3, ['addr'], 'Jump if A != 0')
         emulator.define('JC',  0x33, 3, ['addr'], 'Jump if Carry')
-        emulator.define('JNC',  0x34, 3, ['addr'], 'Jump if not Carry')
+        emulator.define('JNC', 0x34, 3, ['addr'], 'Jump if not Carry')
         emulator.define('JEQ', 0x35, 3, ['addr'], 'Jump if X == Y')
         emulator.define('JNE', 0x36, 3, ['addr'], 'Jump if X != Y')
 
         # --- Function Flow ---
-        emulator.define("RET", 0x37, 1, [], "Pop from stack twice, use the top value as lowbyte and bottom value as highbyte, and jump to that address")
+        emulator.define("RET",  0x37, 1, [], "Pop from stack twice, use the top value as lowbyte and bottom value as highbyte, and jump to that address")
         emulator.define("CALL", 0x38, 3, ['addr'], "Jump to address, pushing current line to stack (high byte first)")
-        emulator.define('BZ',  0x39, 3, ['addr'], 'Call if A == 0')
-        emulator.define('BNZ', 0x3A, 3, ['addr'], 'Call if A != 0')
-        emulator.define('BC',  0x3B, 3, ['addr'], 'Call if Carry')
+        emulator.define('BZ',   0x39, 3, ['addr'], 'Call if A == 0')
+        emulator.define('BNZ',  0x3A, 3, ['addr'], 'Call if A != 0')
+        emulator.define('BC',   0x3B, 3, ['addr'], 'Call if Carry')
         emulator.define('BNC',  0x3C, 3, ['addr'], 'Call if not Carry')
-        emulator.define('BEQ', 0x3D, 3, ['addr'], 'Call if X == Y')
-        emulator.define('BNE', 0x3E, 3, ['addr'], 'Call if X != Y')
+        emulator.define('BEQ',  0x3D, 3, ['addr'], 'Call if X == Y')
+        emulator.define('BNE',  0x3E, 3, ['addr'], 'Call if X != Y')
 
         # --- Load immediate ---
         emulator.define("LDAI", 0x47, 2, ["imm8"], "Load immediate 8-bit value into A")
@@ -342,11 +342,11 @@ class emulator:
 
         # --- Stack ---
         emulator.define("PUSHA", 0x60, 1, [], "Push Register A to stack")
-        emulator.define("POPA", 0x61, 1, [], "Pop from stack to Register A")
+        emulator.define("POPA",  0x61, 1, [], "Pop from stack to Register A")
         emulator.define("PUSHX", 0x62, 1, [], "Push Register X to stack")
-        emulator.define("POPX", 0x63, 1, [], "Pop from stack to Register X")
+        emulator.define("POPX",  0x63, 1, [], "Pop from stack to Register X")
         emulator.define("PUSHY", 0x64, 1, [], "Push Register Y to stack")
-        emulator.define("POPY", 0x65, 1, [], "Pop from stack to Register Y")
+        emulator.define("POPY",  0x65, 1, [], "Pop from stack to Register Y")
 
         # --- System ---
         emulator.define('HALT', 0xFF, 1, [], 'Stop execution')
