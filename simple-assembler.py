@@ -28,7 +28,7 @@ class assembler:
         "jz":0x31,
         "jnz":0x32,
         "jc":0x33,
-        "jnc":0x33,
+        "jnc":0x34,
         "jeq":0x35,
         "jne":0x36,
 

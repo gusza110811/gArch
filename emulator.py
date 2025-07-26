@@ -317,7 +317,7 @@ class emulator:
         emulator.define('JZ',  0x31, 3, ['addr'], 'Jump if A == 0')
         emulator.define('JNZ', 0x32, 3, ['addr'], 'Jump if A != 0')
         emulator.define('JC',  0x33, 3, ['addr'], 'Jump if Carry')
-        emulator.define('JNC',  0x33, 3, ['addr'], 'Jump if not Carry')
+        emulator.define('JNC',  0x34, 3, ['addr'], 'Jump if not Carry')
         emulator.define('JEQ', 0x35, 3, ['addr'], 'Jump if X == Y')
         emulator.define('JNE', 0x36, 3, ['addr'], 'Jump if X != Y')
 
