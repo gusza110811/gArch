@@ -36,6 +36,17 @@ class command:
                 io.handlein(ionum)
         else:
             emulator.memory[addr2] = emulator.memory[addr1]
+    
+    @staticmethod
+    def pop():
+        emulator.stackindex = (emulator.stackindex-1) % 256
+        value = emulator.memory[emulator.stackbeginaddr+emulator.stackindex]
+        return value
+    @staticmethod
+    def push(value):
+        emulator.stackindex = (emulator.stackindex+1) % 256
+        emulator.memory[emulator.stackbeginaddr+emulator.stackindex] = value
+        return
 
     # 0 is output mode, 1 is input mode
     @staticmethod
@@ -45,6 +56,7 @@ class command:
             iostates.append((statebyte & 1)==1)
             statebyte = statebyte >> 1
         return iostates
+    b"\x0A".decode()
 
 class io:
 
@@ -70,7 +82,7 @@ class emulator:
     iostateaddr = 0xFFF0
     ioaddr = range(0xFFF8,0xFFFF)
 
-    stackbeginaddr = 0xFFE0 # 256 bytes stack, 0xFFE0 to 0xFFEF
+    stackbeginaddr = 0xFE00 # 256 bytes stack, 0xFE00 to 0xFEFF
     stackindex = 0
 
     carry = False
@@ -159,6 +171,18 @@ class emulator:
                 if emulator.registers[X] != emulator.registers[Y]:
                     emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
                     continue # the counter is not supposed to increase after a jump
+
+            elif name == "ret":
+                lowbyte = command.pop()
+                highbyte = command.pop()
+                emulator.counter = emulator.bytes_to_double(highbyte,lowbyte)
+                # the counter is supposed to increase after a return
+            elif name == "call":
+                highbyte, lowbyte = emulator.double_to_bytes(emulator.counter)
+                command.push(highbyte)
+                command.push(lowbyte)
+                emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
+                continue # the counter is not supposed to increase after a call
             
             elif name == "add":
                 emulator.registers[A] = emulator.registers[X] + emulator.registers[Y]
@@ -167,6 +191,25 @@ class emulator:
                     emulator.registers[A] = emulator.registers[A] % 256
                 else:
                     emulator.carry = False
+            
+            elif name[:4] == "push":
+                if name[-1] == "a":
+                    target = A
+                elif name[-1] == "x":
+                    target = X
+                elif name[-1] == "y":
+                    target = Y
+
+                command.push(emulator.registers[target])
+
+            elif name[:3] == "pop":
+                if name[-1] == "a":
+                    target = A
+                elif name[-1] == "x":
+                    target = X
+                elif name[-1] == "y":
+                    target = Y
+                emulator.registers[target] = command.pop()
 
             elif name == "halt":
                 break
@@ -176,6 +219,11 @@ class emulator:
 
     @staticmethod
     def bytes_to_double(highbyte:int,lowbyte:int): return (highbyte << 8) + lowbyte
+
+    def double_to_bytes(double:int):
+        lowbyte = double & 0xFF
+        highbyte = double >> 8
+        return lowbyte, highbyte
 
     @staticmethod
     def dump_registers():
@@ -273,6 +321,16 @@ class emulator:
         emulator.define('JEQ', 0x35, 3, ['addr'], 'Jump if X == Y')
         emulator.define('JNE', 0x36, 3, ['addr'], 'Jump if X != Y')
 
+        # --- Function Flow ---
+        emulator.define("RET", 0x37, 1, [], "Pop from stack twice, use the top value as lowbyte and bottom value as highbyte, and jump to that address")
+        emulator.define("CALL", 0x38, 3, ['addr'], "Jump to address, pushing current line to stack (high byte first)")
+        emulator.define('BZ',  0x39, 3, ['addr'], 'Call if A == 0')
+        emulator.define('BNZ', 0x3A, 3, ['addr'], 'Call if A != 0')
+        emulator.define('BC',  0x3B, 3, ['addr'], 'Call if Carry')
+        emulator.define('BNC',  0x3C, 3, ['addr'], 'Call if not Carry')
+        emulator.define('BEQ', 0x3D, 3, ['addr'], 'Call if X == Y')
+        emulator.define('BNE', 0x3E, 3, ['addr'], 'Call if X != Y')
+
         # --- Load immediate ---
         emulator.define("LDAI", 0x47, 2, ["imm8"], "Load immediate 8-bit value into A")
         emulator.define("LDXI", 0x48, 2, ["imm8"], "Load immediate 8-bit value into X")
@@ -283,10 +341,12 @@ class emulator:
         emulator.define("MVAY", 0x51, 1, [], "Copy Register A to Y")
 
         # --- Stack ---
-        emulator.define("PUSH", 0x60, 1, [], "Push Register A to stack")
-        emulator.define("POP", 0x61, 1, [], "Pop from stack to Register A")
-        emulator.define("POPX", 0x62, 1, [], "Pop from stack to Register X")
-        emulator.define("POPY", 0x63, 1, [], "Pop from stack to Register Y")
+        emulator.define("PUSHA", 0x60, 1, [], "Push Register A to stack")
+        emulator.define("POPA", 0x61, 1, [], "Pop from stack to Register A")
+        emulator.define("PUSHX", 0x62, 1, [], "Push Register X to stack")
+        emulator.define("POPX", 0x63, 1, [], "Pop from stack to Register X")
+        emulator.define("PUSHY", 0x64, 1, [], "Push Register Y to stack")
+        emulator.define("POPY", 0x65, 1, [], "Pop from stack to Register Y")
 
         # --- System ---
         emulator.define('HALT', 0xFF, 1, [], 'Stop execution')
