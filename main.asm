@@ -1,13 +1,27 @@
 const console xFFF8
 const nconsole xFFF9
 const counter x8800
+const iostatus xFFF0
+const begininput 2
 
 label main
     LDAI fire^
     CALL println
-    LDAI world^
-    CALL println
-    HALT
+
+label loop
+    LDAI begininput
+    STA console
+    LDAI 1
+    STA iostatus
+
+    LDA console
+    LDXI 0
+    STX iostatus
+    STA console
+
+JMP loop
+
+HALT
 
 label println
     ; To preserve state
@@ -53,3 +67,6 @@ label fire
 
 label world
 .ascii HELLO WORLD!!!
+
+label keyboard
+0

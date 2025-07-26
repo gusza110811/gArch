@@ -12,7 +12,7 @@ class command:
             ionum = emulator.ioaddr.index(addr)
             iostates = command.get_io_states(emulator.memory[emulator.iostateaddr])
             if iostates[ionum]:
-                io.handlein(emulator.registers[reg],ionum)
+                emulator.registers[reg] = io.handlein(ionum)
     @staticmethod
     def store(reg,addr):
         if not (addr in emulator.ioaddr):
@@ -32,8 +32,8 @@ class command:
                 io.handleout(emulator.memory[addr2],ionum)
         elif addr2 in emulator.ioaddr:
             ionum = emulator.ioaddr.index(addr2)
-            if not iostates[ionum]:
-                io.handlein(ionum)
+            if iostates[ionum]:
+                emulator.memory[addr1] = io.handlein(ionum)
         else:
             emulator.memory[addr2] = emulator.memory[addr1]
     
@@ -56,21 +56,31 @@ class command:
             iostates.append((statebyte & 1)==1)
             statebyte = statebyte >> 1
         return iostates
-    b"\x0A".decode()
 
 class io:
+
+    inputbuffer = []
 
     @staticmethod
     def handleout(value,ionum):
         if ionum == 0:
-            print(chr(value),end="")
+            if value == 2:
+                io.inputbuffer = list(input().encode('ascii'))
+                io.inputbuffer.reverse()
+            else:
+                print(chr(value),end="")
         if ionum == 1:
             print(value,end=" ")
         # the rest are unused for now
     
     @staticmethod
     def handlein(ionum):
-        raise NotImplementedError
+        if ionum == 0:
+            try:
+                return io.inputbuffer.pop()
+            except:
+                return 0
+
 
 class emulator:
     TESTING=True
