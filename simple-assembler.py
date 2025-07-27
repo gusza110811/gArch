@@ -18,23 +18,36 @@ class assembler:
         "ldv":0x17,
         "stv":0x18,
 
-        # arithmetic not yet complete
+        # Arithmetic
         "add":0x20,
+        "sub":0x21,
+        "mul":0x22,
+        "div":0x23,
 
-        # bitwise-logic not yet
+        # Bitwise logic
+        "and":0x24,
+        "or" :0x25,
+        "xor":0x26,
+        "not":0x27,
 
         # Control flow
         "jmp":0x30,
-        "jz":0x31,
+        "jz" :0x31,
         "jnz":0x32,
-        "jc":0x33,
+        "jc" :0x33,
         "jnc":0x34,
         "jeq":0x35,
         "jne":0x36,
 
         # Function flow
-        "ret":0x37,
+        "ret" :0x37,
         "call":0x38,
+        "bz"  :0x39,
+        "bnz" :0x3A,
+        "bc"  :0x3B,
+        "bnc" :0x3C,
+        "be"  :0x3D,
+        "bne" :0x3E,
 
         # Load Immediate
         "ldai":0x47,
@@ -47,11 +60,11 @@ class assembler:
 
         # Stack
         "pusha":0x60,
-        "popa":0x61,
+        "popa" :0x61,
         "pushx":0x62,
-        "popx":0x63,
+        "popx" :0x63,
         "pushy":0x64,
-        "popy":0x65,
+        "popy" :0x65,
 
         # HALT
         "halt":0xFF,

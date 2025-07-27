@@ -1,86 +1,5 @@
 import sys
-
-class command:
-    @staticmethod
-    def loadimm(value,reg):
-        emulator.registers[reg] = value
-    @staticmethod
-    def load(addr,reg):
-        if not (addr in emulator.ioaddr):
-            emulator.registers[reg] = emulator.memory[addr]
-        else:
-            ionum = emulator.ioaddr.index(addr)
-            iostates = command.get_io_states(emulator.memory[emulator.iostateaddr])
-            if iostates[ionum]:
-                emulator.registers[reg] = io.handlein(ionum)
-    @staticmethod
-    def store(reg,addr):
-        if not (addr in emulator.ioaddr):
-            emulator.memory[addr] = emulator.registers[reg]
-        else:
-            ionum = emulator.ioaddr.index(addr)
-            iostates = command.get_io_states(emulator.memory[emulator.iostateaddr])
-            if not iostates[ionum]:
-                io.handleout(emulator.registers[reg],ionum)
-
-    @staticmethod
-    def move(addr1,addr2): # FIRST ONE IS THE DESTINATION GOD DAMN IT I DESIGNED THIS SHIT AND I KEEP FORGETTING
-        iostates = command.get_io_states(emulator.memory[emulator.iostateaddr])
-        if addr1 in emulator.ioaddr:
-            ionum = emulator.ioaddr.index(addr1)
-            if not iostates[ionum]:
-                io.handleout(emulator.memory[addr2],ionum)
-        elif addr2 in emulator.ioaddr:
-            ionum = emulator.ioaddr.index(addr2)
-            if iostates[ionum]:
-                emulator.memory[addr1] = io.handlein(ionum)
-        else:
-            emulator.memory[addr2] = emulator.memory[addr1]
-    
-    @staticmethod
-    def pop():
-        emulator.stackindex = (emulator.stackindex-1) % 256
-        value = emulator.memory[emulator.stackbeginaddr+emulator.stackindex]
-        return value
-    @staticmethod
-    def push(value):
-        emulator.stackindex = (emulator.stackindex+1) % 256
-        emulator.memory[emulator.stackbeginaddr+emulator.stackindex] = value
-        return
-
-    # 0 is output mode, 1 is input mode
-    @staticmethod
-    def get_io_states(statebyte):
-        iostates = []
-        for i in range(8):
-            iostates.append((statebyte & 1)==1)
-            statebyte = statebyte >> 1
-        return iostates
-
-class io:
-
-    inputbuffer = []
-
-    @staticmethod
-    def handleout(value,ionum):
-        if ionum == 0:
-            if value == 2:
-                io.inputbuffer = list(input().encode('ascii'))
-                io.inputbuffer.reverse()
-            else:
-                print(chr(value),end="")
-        if ionum == 1:
-            print(value,end=" ")
-        # the rest are unused for now
-    
-    @staticmethod
-    def handlein(ionum):
-        if ionum == 0:
-            try:
-                return io.inputbuffer.pop()
-            except:
-                return 0
-
+from instruction import *
 
 class emulator:
     TESTING=True
@@ -119,111 +38,15 @@ class emulator:
             for i in range(paramslen-1):
                 emulator.counter +=1
                 parambytes.append(code[emulator.counter])
-
-            #print(name,", ".join([hex(byte) for byte in parambytes]))
             
-            if name[:2] == "ld":
-                targetreg=None
-                if name[2] == "a":targetreg=A
-                elif name[2] == "x":targetreg=X
-                elif name[2] == "y":targetreg=Y
-                elif name[2] == "v":targetreg=A
-                if name[-1] == "i":
-                    value = parambytes[0]
-                    command.loadimm(value,targetreg)
-                elif name[-1] == "v":
-                    address = (emulator.registers[X] << 8) + emulator.registers[Y]
-                    command.load(address,targetreg)
-                else:
-                    address = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    command.load(address,targetreg)
-            if name[:2] == "st":
-                sourcereg=None
-                if name[2] == "a":sourcereg=A
-                elif name[2] == "x":sourcereg=X
-                elif name[2] == "y":sourcereg=Y
-                if name[2] == "v":sourcereg=A
-                if name[2] == "v":
-                    address = (emulator.registers[X] << 8) + emulator.registers[Y]
-                    command.store(sourcereg,address)
-                else:
-                    address = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    command.store(sourcereg,address)
-            elif name == "mov":
-                addr1 = emulator.bytes_to_double(parambytes[0], parambytes[1])
-                addr2 = emulator.bytes_to_double(parambytes[2], parambytes[3])
-                command.move(addr1,addr2) # for consistency even though it doesnt make a lot of sense
-            
-            elif name == "jmp":
-                emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                continue # the counter is not supposed to increase after a jump
-            elif name == "jz":
-                if emulator.registers[A] == 0:
-                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    continue # the counter is not supposed to increase after a jump
-            elif name == "jnz":
-                if emulator.registers[A] != 0:
-                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    continue # the counter is not supposed to increase after a jump
-            elif name == "jc":
-                if emulator.carry:
-                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    continue # the counter is not supposed to increase after a jump
-            elif name == "jnc":
-                if not emulator.carry:
-                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    continue # the counter is not supposed to increase after a jump
-            elif name == "jeq":
-                if emulator.registers[X] == emulator.registers[Y]:
-                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    continue # the counter is not supposed to increase after a jump
-            elif name == "jne":
-                if emulator.registers[X] != emulator.registers[Y]:
-                    emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                    continue # the counter is not supposed to increase after a jump
+            status = executor.step(name,parambytes)
 
-            elif name == "ret":
-                lowbyte = command.pop()
-                highbyte = command.pop()
-                emulator.counter = emulator.bytes_to_double(highbyte,lowbyte)
-                # the counter is supposed to increase after a return
-            elif name == "call":
-                highbyte, lowbyte = emulator.double_to_bytes(emulator.counter)
-                command.push(highbyte)
-                command.push(lowbyte)
-                emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])
-                continue # the counter is not supposed to increase after a call
-            
-            elif name == "add":
-                emulator.registers[A] = emulator.registers[X] + emulator.registers[Y]
-                if emulator.registers[A] > 255:
-                    emulator.carry = True
-                    emulator.registers[A] = emulator.registers[A] % 256
-                else:
-                    emulator.carry = False
-            
-            elif name[:4] == "push":
-                if name[-1] == "a":
-                    target = A
-                elif name[-1] == "x":
-                    target = X
-                elif name[-1] == "y":
-                    target = Y
-
-                command.push(emulator.registers[target])
-
-            elif name[:3] == "pop":
-                if name[-1] == "a":
-                    target = A
-                elif name[-1] == "x":
-                    target = X
-                elif name[-1] == "y":
-                    target = Y
-                emulator.registers[target] = command.pop()
-
-            elif name == "halt":
+            if status == 1:
+                continue
+            elif status == 2:
                 break
-            emulator.counter +=1
+            else:
+                emulator.counter +=1
 
         return
 
@@ -314,7 +137,7 @@ class emulator:
         emulator.define('ADD', 0x20, 1, [], 'A = X + Y')
         emulator.define('SUB', 0x21, 1, [], 'A = X - Y')
         emulator.define('MUL', 0x22, 1, [], 'A = X * Y')
-        emulator.define('DIV', 0x23, 1, [], 'A = X / Y (floor)')
+        emulator.define('DIV', 0x23, 1, [], 'A = X // Y')
 
         # --- Bitwise Logic ---
         emulator.define('AND', 0x24, 1, [], 'A = X & Y')
@@ -374,6 +197,8 @@ if __name__ == "__main__":
     with open(source,"rb") as sourcefile:
         code = sourcefile.read()
     
+    executor.init(emulator)
+
     try:
         emulator.main(code)
     except KeyboardInterrupt:

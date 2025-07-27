@@ -1,3 +1,4 @@
 *.asm
 !main.asm
 *.bin
+__pycache__
