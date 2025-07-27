@@ -23,7 +23,6 @@ class emulator:
         for idx,byte in enumerate(code):
             emulator.memory[idx] = byte
 
-        A=0;X=1;Y=2
         while emulator.counter < len(code):
             byte = emulator.memory[emulator.counter]
             parambytes = []
