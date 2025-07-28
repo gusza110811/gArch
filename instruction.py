@@ -43,6 +43,18 @@ class executor:
             addr1 = emulator.bytes_to_double(parambytes[0], parambytes[1])
             addr2 = emulator.bytes_to_double(parambytes[2], parambytes[3])
             command.move(addr1,addr2) # for consistency even though it doesnt make a lot of sense
+        elif name == "mvax":
+            emulator.registers[X] = emulator.registers[A]
+        elif name == "mvay":
+            emulator.registers[Y] = emulator.registers[A]
+        elif name == "mvxy":
+            emulator.registers[Y] = emulator.registers[X]
+        elif name == "mvxa":
+            emulator.registers[A] = emulator.registers[X]
+        elif name == "mvyx":
+            emulator.registers[X] = emulator.registers[Y]
+        elif name == "mvya":
+            emulator.registers[A] = emulator.registers[Y]
         
         # --- CONTROL FLOW ---
         elif name == "jmp":

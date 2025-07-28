@@ -57,6 +57,10 @@ class assembler:
         # Register move
         "mvax":0x50,
         "mvay":0x51,
+        "mvxy":0x52,
+        "mvxa":0x52,
+        "mvyx":0x54,
+        "mvya":0x55,
 
         # Stack
         "pusha":0x60,
@@ -182,11 +186,13 @@ if __name__ == "__main__":
     dest = ""
     try:
         source = sys.argv[1]
-        dest = sys.argv[2]
-    except:
+    except IndexError:
         source = "main.asm"
-        dest = "main.bin"
-        simple = True
+    try:
+        dest = sys.argv[2]
+    except IndexError:
+        dest = ".".join(source.split(".")[:-1])+".bin" if len(source.split("."))>1 else source
+
     with open(source, "r") as sourcefile:
         code = sourcefile.readlines()
     

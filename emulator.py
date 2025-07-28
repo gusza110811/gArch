@@ -171,6 +171,10 @@ class emulator:
         # --- Register-register ---
         emulator.define("MVAX", 0x50, 1, [], "Copy Register A to X")
         emulator.define("MVAY", 0x51, 1, [], "Copy Register A to Y")
+        emulator.define("MVXY", 0x52, 1, [], "Copy Register X to Y")
+        emulator.define("MVXA", 0x53, 1, [], "Copy Register X to A")
+        emulator.define("MVYX", 0x54, 1, [], "Copy Register Y to X")
+        emulator.define("MVYA", 0x55, 1, [], "Copy Register Y to A")
 
         # --- Stack ---
         emulator.define("PUSHA", 0x60, 1, [], "Push Register A to stack")
