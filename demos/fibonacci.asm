@@ -1,9 +1,11 @@
-const console xFFF9
+.include stdio
 
+LDAI 0
+LDXI 0
 LDYI 1
 
 label loop
-    STA console
+    STA nconsole
     ADD
     MVXY
     MVAX

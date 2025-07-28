@@ -2,11 +2,15 @@ import sys
 import os
 import math
 
+active_modules = []
+
 class assembler:
     TESTING = True
     def __init__(self):
         self.constants:dict[str,bytes] = {}
         self.aliases:dict[str,bytes] = {}
+        self.output = b""
+        self.code:list[str]
         self.mnemonicToOP = {
             "nop":0x00,
             # Load and store
@@ -75,14 +79,12 @@ class assembler:
             # HALT
             "halt":0xFF,
         }
-
-    def main(self, code:list[str],modulename="main"):
-
-        output = b""
-
+    
+    def labels(self,name):
         # Prelabel
         for idx,line in enumerate(code):
             line = line.strip()
+            self.decode_helpers(line,idx)
             if line.lower().startswith("label"):
                 words = line.split()[1:]
                 self.constants[words[0]] = bytes([0,0])
@@ -105,14 +107,20 @@ class assembler:
                     code[idx]=""
                     continue
                 if line.startswith("."):
-                    length += len(self.decode_literal(line))
+                    length += len(self.decode_literal(line,idx))
                     break
                 try:
                     length += len(self.decode_value(word,idx,line))
                 except ValueError as e:
-                    print(f"An Error in {modulename}:")
+                    print(f"An Error in {name}:")
                     print(f"    {e}")
                     sys.exit()
+
+    def main(self, code:list[str],modulename="main"):
+        self.code = code
+        self.code.append("HALT")
+
+        self.labels(modulename)
 
         # Main
         for idx,line in enumerate(code):
@@ -123,7 +131,7 @@ class assembler:
                 continue
 
             if line.startswith("."):
-                output += self.decode_literal(line)
+                self.output += self.decode_literal(line,idx)
                 continue
 
             # Word decoder
@@ -135,34 +143,42 @@ class assembler:
                     print(f"    {e}")
                     sys.exit()
                 if result:
-                    output += result
+                    self.output += result
                 else:
                     break
-        return output, self.constants
+        return self.output, self.constants
 
-    def decode_literal(self, line:str):
+    def decode_literal(self, line:str, idx:int):
+        global active_modules
         if line.lower().startswith(".ascii"):
             return bytes(line[7:],encoding="ascii")+(0).to_bytes(1)
         elif line.lower().startswith(".include"):
             lib = "/".join(os.path.abspath(__file__).split(os.sep)[:-1])+"/lib/"
 
             modulename = line[9:]
+
+            if modulename in active_modules:
+                return b''
+
             try:
                 with open(modulename+".asm","r") as modulefile:
                     module = modulefile.readlines()
-                    module.insert(0,f"JMP {modulename}.END\n")
-                    module.append(f"\nlabel {modulename}.END")
             except FileNotFoundError:
                 with open(lib+modulename+".asm","r") as modulefile:
                     module = modulefile.readlines()
-                    module.insert(0,f"JMP {modulename}.END\n")
-                    module.append(f"\nlabel {modulename}.END")
             except FileNotFoundError:
                 sys.exit(f"Unknown Module: {module}")
             
-            result, constants = self.main(module,modulename)
-            self.constants = self.constants | constants
-            return result
+            active_modules.append(modulename)
+
+            module.insert(0,f"\nlabel {modulename}\n")
+            module.append(f"\nRET")
+
+            self.code.pop(idx)
+            self.code += module
+
+            self.labels(modulename)
+            return b''
 
         return
 

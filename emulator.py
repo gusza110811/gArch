@@ -215,7 +215,7 @@ if __name__ == "__main__":
         print("\n\n")
         print(f"Counter: {hex(emulator.counter)}")
         emulator.dump_registers()
-        emulator.dump_memory()
+        emulator.dump_memory(len(code))
 
         delay = min(emulator.latencies)
         print(f"Latency: {delay}")
