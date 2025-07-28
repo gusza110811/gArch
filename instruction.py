@@ -92,7 +92,7 @@ class executor:
             emulator.counter = emulator.bytes_to_double(highbyte,lowbyte)
             # the counter is supposed to increase after a return
         elif name == "call":
-            highbyte, lowbyte = emulator.double_to_bytes(emulator.counter)
+            lowbyte, highbyte = emulator.double_to_bytes(emulator.counter)
             command.push(highbyte)
             command.push(lowbyte)
             emulator.counter = emulator.bytes_to_double(parambytes[0],parambytes[1])

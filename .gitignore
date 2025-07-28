@@ -1,4 +1,7 @@
 *.asm
 !main.asm
+!demos/*
+!lib/*
 *.bin
 __pycache__
+.*

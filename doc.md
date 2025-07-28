@@ -9,15 +9,19 @@
 | `'` | Ascii character |
 | `"` | Ascii string of character (Cannot include space, as it marks the beginning of a new word) |
 
-### Definitions
+### Defining
 
 | Command | Usage|
 | --- | ---
 | `CONST [name] [value]` | Define `name` as `value` |
+| `ALIAS [name] [value]` | Define `name` as `value` but only for this environment, other program importing will not have these definition |
 | `LABEL [name]` | Define `name` as the byte address of the next command. Used for JMP/CALL etc |
+
+Note that usage of defined `name` will be case-sensitive, but the `Command`s itself is not.
 
 #### Misc
 `.ascii [text]` -> Raw `text` encoded in ascii, can include space unlike `"` prefix
+`.include [module]` -> Import `module` globally
 
 ## Virtual Hardware Specification
 ### I/O mode

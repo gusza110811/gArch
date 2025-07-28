@@ -44,8 +44,8 @@ class command:
     
     @staticmethod
     def pop():
-        emulator.stackindex = (emulator.stackindex-1) % 256
         value = emulator.memory[emulator.stackbeginaddr+emulator.stackindex]
+        emulator.stackindex = (emulator.stackindex-1) % 256
         return value
     @staticmethod
     def push(value):

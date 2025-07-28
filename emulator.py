@@ -1,5 +1,6 @@
 import sys
 from instruction import *
+import time
 
 class emulator:
     TESTING=True
@@ -16,6 +17,8 @@ class emulator:
 
     carry = False
 
+    latencies = []
+
     @staticmethod
     def main(code:bytes):
         emulator.definitions()
@@ -24,6 +27,7 @@ class emulator:
             emulator.memory[idx] = byte
 
         while emulator.counter < len(code):
+            before = time.time()
             byte = emulator.memory[emulator.counter]
             parambytes = []
             instruction = emulator.OPCODES[byte]
@@ -40,6 +44,7 @@ class emulator:
             
             status = executor.step(name,parambytes)
 
+            emulator.latencies.append(time.time() - before)
             if status == 1:
                 continue
             elif status == 2:
@@ -208,5 +213,10 @@ if __name__ == "__main__":
         print("INT")
     if emulator.TESTING:
         print("\n\n")
+        print(f"Counter: {hex(emulator.counter)}")
         emulator.dump_registers()
         emulator.dump_memory()
+
+        delay = min(emulator.latencies)
+        print(f"Latency: {delay}")
+        print(f"Or an execution speed of {1/delay}Hz")
