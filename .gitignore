@@ -3,5 +3,6 @@
 !demos/*
 !lib/*
 *.bin
+!main.bin
 __pycache__
 .*

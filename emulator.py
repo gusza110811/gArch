@@ -407,18 +407,20 @@ class emulator:
 if __name__ == "__main__":
     source = ""
     code:bytes
-    try:
-        source = sys.argv[1]
-    except IndexError:
-        source = "main.bin"
     
-    for arg in sys.argv[2:]:
+    for _,arg in enumerate(sys.argv[2:]):
         if arg.startswith("-"):
             arg = arg[1:]
             if arg == "g":
                 emulator.guimode = True
             elif arg == "d":
                 emulator.debug = True
+            continue
+        if _==0:
+            source == arg
+    
+    if source == "":
+        source = "main.bin"
 
     with open(source,"rb") as sourcefile:
         code = sourcefile.read()
