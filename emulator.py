@@ -131,7 +131,7 @@ class CONSOLE:
         self.text = None
         return text
 
-    def inputEnter(self,event):
+    def inputEnter(self,event=None):
         self.text = self.gui.input.get()
         self.gui.input.delete(0,tk.END)
         if self.echo:
