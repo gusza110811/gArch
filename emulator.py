@@ -167,13 +167,16 @@ class emulator:
 
     latencies = []
 
-    @staticmethod
-    def main(code:bytes,gui:GUI):
-        emulator.definitions()
-        console = CONSOLE(gui)
+    guimode = False
 
-        sys.stdout = console
-        sys.stdin = console
+    @staticmethod
+    def main(code:bytes,gui:GUI=None):
+        emulator.definitions()
+        if gui:
+            console = CONSOLE(gui)
+
+            sys.stdout = console
+            sys.stdin = console
 
         timetoupdate = 0
 
@@ -205,25 +208,27 @@ class emulator:
                 break
             else:
                 emulator.counter +=1
-            if emulator.update:
-                gui.update(emulator.registers,emulator.truncate_memory(emulator.memory,len(code)))
-                emulator.update=False
-            else:
-                gui.update(emulator.registers)
             
-            if not gui.running:
-                break
+            if gui:
+                if emulator.update:
+                    gui.update(emulator.registers,emulator.truncate_memory(emulator.memory,len(code)))
+                    emulator.update=False
+                else:
+                    gui.update(emulator.registers)
 
-            if gui.INT:
-                raise HALT
+                if not gui.running:
+                    break
 
-            if timetoupdate <= 0:
-                gui.softupdate()
-                timetoupdate = emulator.updatedelay
-            else:
-                timetoupdate -= 1
+                if gui.INT:
+                    raise HALT
 
-        return gui
+                if timetoupdate <= 0:
+                    gui.softupdate()
+                    timetoupdate = emulator.updatedelay
+                else:
+                    timetoupdate -= 1
+
+        return
 
     @staticmethod
     def bytes_to_double(highbyte:int,lowbyte:int): return (highbyte << 8) + lowbyte
@@ -407,12 +412,21 @@ if __name__ == "__main__":
     except IndexError:
         source = "main.bin"
     
+    for arg in sys.argv[2:]:
+        if arg.startswith("-"):
+            arg = arg[1:]
+            if (arg == "g") or (arg == "G"):
+                emulator.guimode = True
+
     with open(source,"rb") as sourcefile:
         code = sourcefile.read()
     
     executor.init(emulator)
 
-    gui = GUI()
+    if emulator.guimode:
+        gui = GUI()
+    else:
+        gui = None
     stdout = sys.stdout
 
     try:
@@ -421,7 +435,10 @@ if __name__ == "__main__":
         print("Halted")
     except KeyboardInterrupt:
         sys.stdout = stdout
-        print("INT")
+        if not emulator.guimode:
+            print("Halted")
+        else:
+            print("INT")
     except tk.TclError:
         pass
     sys.stdout = stdout
