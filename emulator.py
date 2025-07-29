@@ -1,9 +1,153 @@
 import sys
-from instruction import *
+from executor import *
 import time
 
+import tkinter as tk
+from tkinter import ttk
+
+"Program is halted"
+class HALT(Exception):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+class GUI:
+    def __init__(self):
+        self.tk = tk.Tk()
+        self.tk.title("gProcessor Emulation")
+        self.tk.geometry("800x600")
+
+        self.running = True
+        self.INT = False
+
+        self.tk.protocol("WM_DELETE_WINDOW",self.onClose)
+
+        self._build_layout()
+
+    def onClose(self):
+        self.running = False
+        sys.exit(0)
+
+    def _build_layout(self):
+        # ====== Top Frame: Registers and Status ======
+        self.reg_frame = ttk.LabelFrame(self.tk, text="Registers")
+        self.reg_frame.pack(fill="x", padx=10, pady=5)
+
+        self.register_labels = {}
+        for reg, value in enumerate(emulator.registers):
+            if reg == 0: name = "A"
+            elif reg == 1: name = "X"
+            elif reg == 2: name = "Y"
+            lbl = ttk.Label(self.reg_frame, text=f"{name}: {value}")
+            lbl.pack(side="left", padx=5)
+            self.register_labels[reg] = lbl
+
+        # ====== Middle Frame: Console ======
+        self.output_frame = ttk.LabelFrame(self.tk, text="Console Output")
+        self.output_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.output_text = tk.Text(self.output_frame, height=10, wrap="word", bg="#111", fg="#fff",state=tk.DISABLED)
+        self.output_text.pack(fill="both", expand=True)
+
+        self.input_frame = ttk.LabelFrame(self.tk,text="Control")
+        self.input_frame.pack(fill='x',expand=True, padx=10, pady=5)
+
+        self.input = tk.Entry(self.input_frame)
+        self.input.pack(side=tk.LEFT,expand=True,fill="x")
+        self.input_button = tk.Button(self.input_frame,text="Enter")
+        self.input_button.pack(side=tk.LEFT)
+        self.echo_button = tk.Button(self.input_frame,text="Input Echo: OFF ")
+        self.echo_button.pack(side=tk.LEFT)
+
+        def interrupt():
+            self.INT = True
+        self.int_button = tk.Button(self.input_frame,text="End execution now",command=interrupt)
+        self.int_button.pack(side=tk.LEFT)
+
+        # ====== Bottom Frame: Memory View ======
+        self.memory_frame = ttk.LabelFrame(self.tk, text="Memory")
+        self.memory_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.memory_list = tk.Listbox(self.memory_frame, font=("Courier", 10))
+        self.memory_list.pack(side="left", fill="both", expand=True)
+
+        self.scrollbar = ttk.Scrollbar(self.memory_frame, orient="vertical", command=self.memory_list.yview)
+        self.scrollbar.pack(side="right", fill="y")
+        self.memory_list.config(yscrollcommand=self.scrollbar.set)
+
+    def update_registers(self, registers: list):
+        for reg, value in enumerate(registers):
+            if reg in self.register_labels:
+                self.register_labels[reg].config(text=f"{reg}: {value:02X}")
+
+    def update_memory(self, memory: list):
+        self.memory_list.delete(0, "end")
+        for value in memory:
+            self.memory_list.insert("end", value)
+
+    def softupdate(self):
+        self.tk.update()
+
+    def update(self,registers:list=None,truncated_memory:list=None):
+        if registers:
+            self.update_registers(registers)
+        if truncated_memory:
+            self.update_memory(truncated_memory)
+        self.tk.update_idletasks()
+
+    def run(self):
+        self.tk.mainloop()
+
+
+class CONSOLE:
+    def __init__(self,gui:GUI):
+        self.gui = gui
+        self.console = gui.output_text
+        self.echo = False
+        self.text = None
+        gui.input_button.config(command=self.inputEnter)
+        gui.input.bind('<Return>', self.inputEnter)
+        gui.echo_button.config(command=self.toggleEcho)
+    
+    def write(self,text):
+        self.gui.output_text.config(state=tk.NORMAL)
+        self.console.insert(tk.END,text)
+        self.console.see(tk.END)
+        self.gui.output_text.config(state=tk.DISABLED)
+
+    def flush(self):
+
+        return
+    
+    def readline(self):
+
+        while not self.text:
+            self.gui.softupdate()
+            if (not gui.running) or gui.INT:
+                return "\n"
+        text = self.text
+        self.text = None
+        return text
+
+    def inputEnter(self,event):
+        self.text = self.gui.input.get()
+        self.gui.input.delete(0,tk.END)
+        if self.echo:
+            print(self.text)
+
+        return
+    
+    def toggleEcho(self):
+        self.echo = not self.echo
+
+        if self.echo:
+            gui.echo_button.config(text="Input Echo:  ON ")
+        else:
+            gui.echo_button.config(text="Input Echo: OFF ")
+
+        return
+
 class emulator:
-    TESTING=True
+    TESTING=False
 
     memory = bytearray(2**16)
     registers = [0,0,0] # A, X, Y respectively
@@ -15,13 +159,23 @@ class emulator:
     stackbeginaddr = 0xFE00 # 256 bytes stack, 0xFE00 to 0xFEFF
     stackindex = 0
 
+    updatedelay = 10
+
+    update = False
+
     carry = False
 
     latencies = []
 
     @staticmethod
-    def main(code:bytes):
+    def main(code:bytes,gui:GUI):
         emulator.definitions()
+        console = CONSOLE(gui)
+
+        sys.stdout = console
+        sys.stdin = console
+
+        timetoupdate = 0
 
         for idx,byte in enumerate(code):
             emulator.memory[idx] = byte
@@ -51,8 +205,25 @@ class emulator:
                 break
             else:
                 emulator.counter +=1
+            if emulator.update:
+                gui.update(emulator.registers,emulator.truncate_memory(emulator.memory,len(code)))
+                emulator.update=False
+            else:
+                gui.update(emulator.registers)
+            
+            if not gui.running:
+                break
 
-        return
+            if gui.INT:
+                raise HALT
+
+            if timetoupdate <= 0:
+                gui.softupdate()
+                timetoupdate = emulator.updatedelay
+            else:
+                timetoupdate -= 1
+
+        return gui
 
     @staticmethod
     def bytes_to_double(highbyte:int,lowbyte:int): return (highbyte << 8) + lowbyte
@@ -71,6 +242,40 @@ class emulator:
     @staticmethod
     def dump_addr(addr:int):
         print(f"{addr:04X}: x{emulator.memory[addr]:02X}")
+    
+    @staticmethod
+    def truncate_memory(mem:bytearray, start: int = 0, end: int = None):
+        result = []
+        if end is None:
+            end = len(mem)
+
+        prev_value = None
+        repeat_count = 0
+        printed = False
+
+        for i in range(start, end):
+            value = mem[i]
+
+            if value == prev_value:
+                repeat_count += 1
+                printed = False
+            else:
+                if repeat_count > 0:
+                    if not printed:
+                        if repeat_count > 1:
+                            result.append(f"    ... {repeat_count} times")
+                        else:
+                            result.append("    ... repeated")
+                        printed = True
+                    repeat_count = 0
+
+                result.append(f"{i:04X}: x{value:02X}")
+                prev_value = value
+
+        if repeat_count > 0:
+            result.append(f"    ... repeated to {(end-1):04X}")
+        
+        return result
 
     @staticmethod
     def dump_memory(start: int = 0, end: int = None):
@@ -207,16 +412,25 @@ if __name__ == "__main__":
     
     executor.init(emulator)
 
+    gui = GUI()
+    stdout = sys.stdout
+
     try:
-        emulator.main(code)
+        emulator.main(code,gui)
+    except HALT:
+        print("Halted")
     except KeyboardInterrupt:
+        sys.stdout = stdout
         print("INT")
+    except tk.TclError:
+        pass
+    sys.stdout = stdout
     if emulator.TESTING:
         print("\n\n")
         print(f"Counter: {hex(emulator.counter)}")
         emulator.dump_registers()
         emulator.dump_memory(len(code))
-
         delay = min(emulator.latencies)
         print(f"Latency: {delay}")
         print(f"Or an execution speed of {1/delay}Hz")
+    gui.run()

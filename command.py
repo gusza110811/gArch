@@ -21,6 +21,7 @@ class command:
     @staticmethod
     def store(reg,addr):
         if not (addr in emulator.ioaddr):
+            emulator.update = True
             emulator.memory[addr] = emulator.registers[reg]
         else:
             ionum = emulator.ioaddr.index(addr)
@@ -31,6 +32,7 @@ class command:
     @staticmethod
     def move(addr1,addr2): # FIRST ONE IS THE DESTINATION GOD DAMN IT I DESIGNED THIS SHIT AND I KEEP FORGETTING
         iostates = command.get_io_states(emulator.memory[emulator.iostateaddr])
+        emulator.update = True
         if addr1 in emulator.ioaddr:
             ionum = emulator.ioaddr.index(addr1)
             if not iostates[ionum]:
