@@ -5,8 +5,8 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
-"Program is halted"
 class HALT(Exception):
+    "Program is halted"
     def __init__(self, *args):
         super().__init__(*args)
 
