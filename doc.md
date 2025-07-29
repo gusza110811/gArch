@@ -93,6 +93,10 @@ These are case-insensitive
 | **Register-Register Copy** |
 | `MVAX` | Copy register A to register X |
 | `MVAY` | Copy register A to register Y |
+| `MVXA` | Copy register X to register A |
+| `MVXY` | Copy register X to register Y |
+| `MVYA` | Copy register Y to register A |
+| `MVYX` | Copy register Y to register X |
 | **Stack** |
 | `PUSHA` | Push register A to stack |
 | `POPA` | Pop from stack to register A |
