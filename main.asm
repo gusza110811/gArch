@@ -1,9 +1,5 @@
 .include stdio
 
-const counter x8800
-const iostatus xFFF0
-const begininput 2
-
 label main
     LDAI fire^
     CALL println

@@ -76,13 +76,16 @@ class GUI:
 
     def update_registers(self, registers: list):
         for reg, value in enumerate(registers):
+            name = 'A' if reg==0 else 'X' if reg==1 else 'Y'
             if reg in self.register_labels:
-                self.register_labels[reg].config(text=f"{reg}: {value:02X}")
+                self.register_labels[reg].config(text=f"{name}: {value:02X}")
 
     def update_memory(self, memory: list):
+        scroll_fraction = self.memory_list.yview()[0]
         self.memory_list.delete(0, "end")
         for value in memory:
             self.memory_list.insert("end", value)
+        self.memory_list.yview_moveto(scroll_fraction)
 
     def softupdate(self):
         self.tk.update()
@@ -161,7 +164,7 @@ class emulator:
 
     updatedelay = 10
 
-    update = False
+    update = True
 
     carry = False
 
@@ -408,7 +411,7 @@ if __name__ == "__main__":
     source = ""
     code:bytes
     
-    for _,arg in enumerate(sys.argv):
+    for _,arg in enumerate(sys.argv[1:]):
         if arg.startswith("-"):
             arg = arg[1:]
             if arg == "g":
@@ -417,10 +420,12 @@ if __name__ == "__main__":
                 emulator.debug = True
             continue
         if _==0:
-            source == arg
+            source = arg
     
     if source == "":
         source = "main.bin"
+    
+    print(source)
 
     with open(source,"rb") as sourcefile:
         code = sourcefile.read()
@@ -437,15 +442,14 @@ if __name__ == "__main__":
     try:
         emulator.main(code,gui)
     except HALT:
-        print("Halted")
+        pass
     except KeyboardInterrupt:
         sys.stdout = stdout
-        if not emulator.guimode:
-            print("Halted")
-        else:
+        if not gui:
             print("INT")
     except tk.TclError:
         pass
+    print("Halted")
     sys.stdout = stdout
     if emulator.debug:
         print("\n\n")
@@ -455,4 +459,6 @@ if __name__ == "__main__":
         delay = min(emulator.latencies)
         print(f"Latency: {delay}")
         print(f"Or an execution speed of {1/delay}Hz")
-    gui.run()
+    
+    if emulator.guimode:
+        gui.run()

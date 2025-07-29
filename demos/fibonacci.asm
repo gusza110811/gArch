@@ -1,4 +1,4 @@
-.include stdio
+alias nconsole xFFF9
 
 LDAI 0
 LDXI 0
