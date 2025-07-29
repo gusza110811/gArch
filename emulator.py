@@ -147,7 +147,7 @@ class CONSOLE:
         return
 
 class emulator:
-    TESTING=False
+    debug = False
 
     memory = bytearray(2**16)
     registers = [0,0,0] # A, X, Y respectively
@@ -415,8 +415,10 @@ if __name__ == "__main__":
     for arg in sys.argv[2:]:
         if arg.startswith("-"):
             arg = arg[1:]
-            if (arg == "g") or (arg == "G"):
+            if arg == "g":
                 emulator.guimode = True
+            elif arg == "d":
+                emulator.debug = True
 
     with open(source,"rb") as sourcefile:
         code = sourcefile.read()
@@ -442,7 +444,7 @@ if __name__ == "__main__":
     except tk.TclError:
         pass
     sys.stdout = stdout
-    if emulator.TESTING:
+    if emulator.debug:
         print("\n\n")
         print(f"Counter: {hex(emulator.counter)}")
         emulator.dump_registers()

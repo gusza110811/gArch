@@ -5,7 +5,6 @@ import math
 active_modules = []
 
 class assembler:
-    TESTING = True
     def __init__(self):
         self.constants:dict[str,bytes] = {}
         self.aliases:dict[str,bytes] = {}
