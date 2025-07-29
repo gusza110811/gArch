@@ -408,7 +408,7 @@ if __name__ == "__main__":
     source = ""
     code:bytes
     
-    for _,arg in enumerate(sys.argv[2:]):
+    for _,arg in enumerate(sys.argv):
         if arg.startswith("-"):
             arg = arg[1:]
             if arg == "g":
@@ -426,6 +426,7 @@ if __name__ == "__main__":
         code = sourcefile.read()
     
     executor.init(emulator)
+
 
     if emulator.guimode:
         gui = GUI()
