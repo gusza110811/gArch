@@ -170,7 +170,7 @@ class emulator:
 
     latencies = []
 
-    guimode = False
+    guimode = True
 
     @staticmethod
     def main(code:bytes,gui:GUI=None):
@@ -414,8 +414,8 @@ if __name__ == "__main__":
     for _,arg in enumerate(sys.argv[1:]):
         if arg.startswith("-"):
             arg = arg[1:]
-            if arg == "g":
-                emulator.guimode = True
+            if arg == "c":
+                emulator.guimode = False
             elif arg == "d":
                 emulator.debug = True
             continue
@@ -434,7 +434,10 @@ if __name__ == "__main__":
 
 
     if emulator.guimode:
-        gui = GUI()
+        try:
+            gui = GUI()
+        except tk.TclError:
+            print("Unable to start GUI mode, try using `-c` to start without graphical stat")
     else:
         gui = None
     stdout = sys.stdout
@@ -447,17 +450,17 @@ if __name__ == "__main__":
         sys.stdout = stdout
         if not gui:
             print("INT")
-    except tk.TclError:
-        pass
+    except tk.TclError as error:
+        sys.stdout = stdout
+        sys.exit(f"Unknown error: {error}")
     print("Halted")
-    sys.stdout = stdout
     if emulator.debug:
         print("\n\n")
         print(f"Counter: {hex(emulator.counter)}")
         emulator.dump_registers()
         emulator.dump_memory(len(code))
         delay = min(emulator.latencies)
-        print(f"Latency: {delay}")
+        print(f"Latency: {(delay*(10**9)):.3f}ns")
         print(f"Or an execution speed of {1/delay}Hz")
     
     if emulator.guimode:
