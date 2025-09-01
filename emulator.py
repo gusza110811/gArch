@@ -13,7 +13,7 @@ class HALT(Exception):
 class GUI:
     def __init__(self):
         self.tk = tk.Tk()
-        self.tk.title("gProcessor Emulation")
+        self.tk.title("gArch Emulation")
         self.tk.geometry("800x600")
 
         self.running = True
